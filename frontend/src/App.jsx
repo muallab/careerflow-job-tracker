@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -7,6 +7,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("ALL");
+
   useEffect(() => {
     async function loadJobs() {
       try {
@@ -14,9 +17,7 @@ export default function App() {
         setError("");
 
         const res = await fetch(`${API_BASE}/api/jobs/`);
-        if (!res.ok) {
-          throw new Error(`Request failed: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
 
         const data = await res.json();
         setJobs(data);
@@ -30,22 +31,103 @@ export default function App() {
     loadJobs();
   }, []);
 
-  return (
-    <div style={{ padding: 24, fontFamily: "system-ui" }}>
-      <h1>CareerFlow – Jobs</h1>
+  const statusOptions = useMemo(() => {
+    const unique = Array.from(new Set(jobs.map((j) => j.status))).sort();
+    return ["ALL", ...unique];
+  }, [jobs]);
 
-      {loading && <p>Loading...</p>}
+  const filteredJobs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    return jobs.filter((job) => {
+      const matchesQuery =
+        q.length === 0 ||
+        job.company.toLowerCase().includes(q) ||
+        job.title.toLowerCase().includes(q);
+
+      const matchesStatus = status === "ALL" || job.status === status;
+
+      return matchesQuery && matchesStatus;
+    });
+  }, [jobs, query, status]);
+
+  return (
+    <div style={{ padding: 24, fontFamily: "system-ui", maxWidth: 900, margin: "0 auto" }}>
+      <h1 style={{ marginBottom: 8 }}>CareerFlow</h1>
+      <p style={{ marginTop: 0, opacity: 0.8 }}>Track applications like a real product.</p>
+
+      <div style={{ display: "flex", gap: 12, marginTop: 16, marginBottom: 16 }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search company or title…"
+          style={{
+            flex: 1,
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(0,0,0,0.2)",
+          }}
+        />
+
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          style={{
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(0,0,0,0.2)",
+            minWidth: 170,
+          }}
+        >
+          {statusOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loading && <p>Loading…</p>}
       {error && <p style={{ color: "crimson" }}>{error}</p>}
 
-      {!loading && !error && jobs.length === 0 && <p>No jobs yet.</p>}
+      {!loading && !error && filteredJobs.length === 0 && (
+        <p>No matching jobs. Try clearing the search or filter.</p>
+      )}
 
-      <ul>
-        {jobs.map((job) => (
-          <li key={job.id}>
-            <strong>{job.company}</strong> — {job.title} ({job.status})
-          </li>
+      <div style={{ display: "grid", gap: 12 }}>
+        {filteredJobs.map((job) => (
+          <div
+            key={job.id}
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              border: "1px solid rgba(0,0,0,0.15)",
+              boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 700 }}>{job.company}</div>
+              <div style={{ opacity: 0.85 }}>{job.title}</div>
+            </div>
+
+            <div
+              style={{
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: "1px solid rgba(0,0,0,0.2)",
+                fontSize: 12,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {job.status}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

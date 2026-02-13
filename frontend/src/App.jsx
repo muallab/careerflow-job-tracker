@@ -95,6 +95,26 @@ export default function App() {
     setSubmitting(false);
   }
 }
+async function handleDeleteJob(jobId) {
+  const ok = window.confirm("Delete this job?");
+  if (!ok) return;
+
+  try {
+    setError("");
+
+    const res = await fetch(`${API_BASE}/api/jobs/${jobId}/`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Delete failed: ${res.status}`);
+    }
+
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  } catch (err) {
+    setError(err.message || "Could not delete job.");
+  }
+}
 
 
   return (
@@ -232,6 +252,7 @@ export default function App() {
               }}
             >
               {job.status}
+              <button onClick={() => handleDeleteJob(job.id)}>Delete</button>
             </div>
           </div>
         ))}

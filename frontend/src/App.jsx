@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 const API_BASE = "http://127.0.0.1:8000";
 
 function statusBg(status) {
-  if (status === "WISHLIST") return "#e0f2fe";   // light blue
-  if (status === "APPLIED") return "#ede9fe";    // light purple
-  if (status === "INTERVIEW") return "#fef3c7";  // light yellow
-  if (status === "OFFER") return "#dcfce7";      // light green
-  return "#fee2e2";                               // light red (REJECTED)
+  if (status === "WISHLIST") return "#e0f2fe";
+  if (status === "APPLIED") return "#ede9fe";
+  if (status === "INTERVIEW") return "#fef3c7";
+  if (status === "OFFER") return "#dcfce7";
+  return "#fee2e2";
 }
 
 function statusBorder(status) {
@@ -19,9 +19,6 @@ function statusBorder(status) {
 }
 
 export default function App() {
-  // -------------------
-  // State
-  // -------------------
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,9 +31,8 @@ export default function App() {
   const [newStatus, setNewStatus] = useState("WISHLIST");
   const [submitting, setSubmitting] = useState(false);
 
-  // -------------------
-  // Load jobs (READ)
-  // -------------------
+  const [openNotesJobId, setOpenNotesJobId] = useState(null);
+
   useEffect(() => {
     async function loadJobs() {
       try {
@@ -58,9 +54,6 @@ export default function App() {
     loadJobs();
   }, []);
 
-  // -------------------
-  // Derived UI data
-  // -------------------
   const statusOptions = useMemo(() => {
     const unique = Array.from(new Set(jobs.map((j) => j.status))).sort();
     return ["ALL", ...unique];
@@ -81,9 +74,6 @@ export default function App() {
     });
   }, [jobs, query, status]);
 
-  // -------------------
-  // CREATE
-  // -------------------
   async function handleCreateJob(e) {
     e.preventDefault();
 
@@ -121,9 +111,6 @@ export default function App() {
     }
   }
 
-  // -------------------
-  // DELETE
-  // -------------------
   async function handleDeleteJob(jobId) {
     const ok = window.confirm("Delete this job?");
     if (!ok) return;
@@ -143,9 +130,6 @@ export default function App() {
     }
   }
 
-  // -------------------
-  // UPDATE (PATCH status)
-  // -------------------
   async function handleUpdateStatus(jobId, nextStatus) {
     try {
       setError("");
@@ -165,9 +149,6 @@ export default function App() {
     }
   }
 
-  // -------------------
-  // UI
-  // -------------------
   return (
     <div
       style={{
@@ -177,8 +158,14 @@ export default function App() {
         margin: "0 auto",
       }}
     >
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 16,
+        }}
+      >
         <div>
           <h1 style={{ marginBottom: 6 }}>CareerFlow</h1>
           <p style={{ marginTop: 0, opacity: 0.8 }}>
@@ -191,7 +178,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Create form */}
       <form
         onSubmit={handleCreateJob}
         style={{
@@ -259,7 +245,6 @@ export default function App() {
         </button>
       </form>
 
-      {/* Search + filter */}
       <div style={{ display: "flex", gap: 12, marginTop: 8, marginBottom: 16 }}>
         <input
           value={query}
@@ -300,66 +285,111 @@ export default function App() {
         <p>No matching jobs. Try clearing the search or filter.</p>
       )}
 
-      {/* Job cards */}
       <div style={{ display: "grid", gap: 12 }}>
         {filteredJobs.map((job) => (
-          <div
-            key={job.id}
-            style={{
-              padding: 14,
-              borderRadius: 16,
-              border: "1px solid rgba(0,0,0,0.14)",
-              boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 750, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {job.company}
+          <div key={job.id}>
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 16,
+                border: "1px solid rgba(0,0,0,0.14)",
+                boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontWeight: 750,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {job.company}
+                </div>
+                <div
+                  style={{
+                    opacity: 0.85,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {job.title}
+                </div>
               </div>
-              <div style={{ opacity: 0.85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {job.title}
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <select
+                  value={job.status}
+                  onChange={(e) => handleUpdateStatus(job.id, e.target.value)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 12,
+                    border: `1px solid ${statusBorder(job.status)}`,
+                    fontSize: 12,
+                    background: statusBg(job.status),
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="WISHLIST">WISHLIST</option>
+                  <option value="APPLIED">APPLIED</option>
+                  <option value="INTERVIEW">INTERVIEW</option>
+                  <option value="OFFER">OFFER</option>
+                  <option value="REJECTED">REJECTED</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteJob(job.id)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(0,0,0,0.22)",
+                    cursor: "pointer",
+                    background: "transparent",
+                    fontWeight: 600,
+                  }}
+                >
+                  Delete
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenNotesJobId(openNotesJobId === job.id ? null : job.id)
+                  }
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(0,0,0,0.22)",
+                    cursor: "pointer",
+                    background: "transparent",
+                    fontWeight: 600,
+                  }}
+                >
+                  Notes
+                </button>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <select
-                value={job.status}
-                onChange={(e) => handleUpdateStatus(job.id, e.target.value)}
+            {openNotesJobId === job.id && (
+              <div
                 style={{
-                  padding: "6px 10px",
+                  marginTop: 8,
+                  padding: 12,
+                  border: "1px solid rgba(0,0,0,0.12)",
                   borderRadius: 12,
-                  border: `1px solid ${statusBorder(job.status)}`,
-                  fontSize: 12,
-                  background: statusBg(job.status),
-                  cursor: "pointer",
+                  background: "#f9fafb",
                 }}
               >
-                <option value="WISHLIST">WISHLIST</option>
-                <option value="APPLIED">APPLIED</option>
-                <option value="INTERVIEW">INTERVIEW</option>
-                <option value="OFFER">OFFER</option>
-                <option value="REJECTED">REJECTED</option>
-              </select>
-
-              <button
-                type="button"
-                onClick={() => handleDeleteJob(job.id)}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(0,0,0,0.22)",
-                  cursor: "pointer",
-                  background: "transparent",
-                  fontWeight: 600,
-                }}
-              >
-                Delete
-              </button>
-            </div>
+                Notes section coming next...
+              </div>
+            )}
           </div>
         ))}
       </div>
